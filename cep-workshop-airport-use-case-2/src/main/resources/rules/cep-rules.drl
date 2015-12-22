@@ -1,0 +1,28 @@
+package org.jboss.ddoyle.brms.cep.workshop.rules;
+
+import org.jboss.ddoyle.brms.cep.workshop.model.BagScannedEvent;
+import org.jboss.ddoyle.brms.cep.workshop.model.Location;
+
+declare BagScannedEvent
+   @role(event)
+   @timestamp(timestamp)
+   @expires(5d)
+end
+
+rule "BagLostBeforeSorting"
+when
+	$event1:BagScannedEvent(location == Location.CHECK_IN)
+	not($event2:BagScannedEvent(location == Location.SORTING, this != $event1, this after[0, 10m] $event1)) 
+then
+	System.out.println("Bag lost before sorting: " + $event1.getBagTag().getId());
+end
+
+rule "NumberOfBagsEnteredSortingInLastHour"
+when
+	$number: Number() from accumulate ($b:BagScannedEvent(location == Location.SORTING) over window:time(60m), count($b))
+then
+	System.out.println("Number of bags that entered sorting in the last hour: " + $number + ". CurrentTime: " + drools.getWorkingMemory().getSessionClock().getCurrentTime());
+end
+
+
+

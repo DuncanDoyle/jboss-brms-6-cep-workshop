@@ -1,0 +1,71 @@
+package org.jboss.ddoyle.brms.cep.workshop.rules;
+
+import org.jboss.ddoyle.brms.cep.workshop.model.BagScannedEvent;
+import org.jboss.ddoyle.brms.cep.workshop.model.Location;
+
+declare BagScannedEvent
+   @role(event)
+   @timestamp(timestamp)
+   @expires(5d)
+end
+
+rule "BagLostBeforeSorting"
+enabled false
+when
+	$event1:BagScannedEvent(location == Location.CHECK_IN)
+	not($event2:BagScannedEvent(location == Location.SORTING, this != $event1, bagTag.id == $event1.bagTag.id, this after[0, 10m] $event1)) 
+then
+	System.out.println("\nBag lost before sorting: " + $event1.getBagTag().getId());
+end
+
+rule "NumberOfBagsEnteredSortingInLastHour"
+enabled false
+when
+	$number: Number() from accumulate ($b:BagScannedEvent(location == Location.SORTING) over window:time(60m), count($b))
+then
+	System.out.println("\nNumber of bags that entered sorting in the last hour: " + $number + ". CurrentTime: " + drools.getWorkingMemory().getSessionClock().getCurrentTime());
+end
+
+rule "Average weight of last 5 bags that entered Sorting stage."
+enabled false
+when
+	$number: Number() from accumulate ($b:BagScannedEvent(location == Location.SORTING) over window:length(5), average($b.getWeight()))
+then
+	System.out.println("\nAverage weight of last 5 bags: " + $number + ". CurrentTime: " + drools.getWorkingMemory().getSessionClock().getCurrentTime());
+end
+
+rule "Bla."
+enabled true
+when
+	$b:BagScannedEvent(location == Location.SORTING) over window:length(5)
+then
+	System.out.println("\n Found BagScannedEvent in the window.");
+end
+
+
+/*
+ * One note with this rule .... if there is event for a bag in sorting, there has to be an event for it in check_in.
+ * If not, that average will not be taken into account.
+ * So, we can create a warning rule for that state as well.
+ */
+rule "Average processing time of last 5 bags in Sorting"
+enabled false
+when
+	$number: Number() from accumulate ($eventSorting: BagScannedEvent(location == Location.SORTING) over window:length(5) and
+											$eventCheckIn: BagScannedEvent(location == Location.CHECK_IN, bagTag.id == $eventSorting.bagTag.id), 
+											average ($eventSorting.getTimestamp().getTime() - $eventCheckIn.getTimestamp().getTime())) 
+then
+	System.out.println("Average processing time of the last 5 bags: " + $number);
+end
+
+
+rule "SORTING event should have matching CHECK_IN event"
+enabled false
+when
+	$sortingEvent: BagScannedEvent(location == Location.SORTING)
+	not (BagScannedEvent(location == Location.CHECK_IN, this != $sortingEvent, this.bagTag.id == $sortingEvent.bagTag.id))
+then
+	System.out.println("BIG ERROR, we don't have a matching event in CHECK_IN for the event in SORTING");
+end
+
+

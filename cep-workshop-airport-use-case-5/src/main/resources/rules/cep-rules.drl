@@ -1,0 +1,34 @@
+package org.jboss.ddoyle.brms.cep.workshop.rules;
+
+import org.jboss.ddoyle.brms.cep.workshop.model.BagScannedEvent;
+import org.jboss.ddoyle.brms.cep.workshop.model.Location;
+
+declare BagScannedEvent
+   @role(event)
+   @timestamp(timestamp)
+   @expires(5d)
+end
+
+rule "BagScannedEvents from Stream CheckIn"
+when
+	$event1:BagScannedEvent() from entry-point "CheckIn"
+then
+	System.out.println("\nBagScannedEvent in entry-point CheckIn: " + $event1);
+end
+
+rule "BagScannedEvents from stream Sorting"
+when
+	$event1:BagScannedEvent() from entry-point "Sorting"
+then
+	System.out.println("\nBagScannedEvent in entry-point Sorting: " + $event1);
+end
+
+
+rule "BagScannedEvents from stream Staging."
+when
+	$event1:BagScannedEvent() from entry-point "Staging"
+then
+	System.out.println("\nBagScannedEvent in entry-point Staging: " + $event1);
+end
+
+

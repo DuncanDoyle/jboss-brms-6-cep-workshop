@@ -1,0 +1,75 @@
+= JBoss BRMS 6.0 Workshop
+
+Event:: A [blue]#significant# [red]#change of state# at a [green]#particular point in time#.
+
+Complex Event Processing:: The ability to [blue]#detect#, [red]#correlate#, [green]#abstract, aggregate or compose# and react to events. 
+
+== Complex Event Processing
+
+Complex Event Processing allows one to reason over Events. JBoss BRMS 6 provides extensive support for CEP through the Drools Fusion project.
+
+The key difference between reasoning over _facts_ and reasoning over _events_ is that with _events_, one can reason over time. E.g. one can reason over time-based correlations using, among other things, temportal operators. E.g. did this event happen before that event. Did this event start at the same time as that event, etc.
+
+== Events
+What makes a Fact and Event? In Drools, an Event is defined by marking/declaring a Fact as an Event. This can be done in different ways:
+
+* Using the _declare_ semantics in a _.drl_ file.
+* Using the Drools _@Role(Type.EVENT)_ annotation.
+
+A key aspect that distinguishes an Event from a Fact is the notion of time. An Event:
+
+* must have a *timestamp*
+* can have a *duration*
+
+Hence, JBoss BRMS can both model point-in-time and interval-based events. A point-in-time event is represented as an interval-based event with duration = 0. 
+Both the timestamp and duration can be configured on the Event, either via the _declare_ semantics in a _.drl_ file or via a Drools annotation.
+
+As stated earlier, an Event must have a timestamp. However, one does not need to specifically declare a timestamp field on the Event.
+
+* When a timestamp field is explicitly specified on an Event, the engine uses the value of that field as the Event's timestamp.
+* When a timestamp field is not explicitly specified, the engine implicitly sets the time of event insertion as the Event's timestamp.
+
+The images below provide a number of examples on how Events and their properties can be declared:
+
+image:images/drools-cep-declare-event-drl.png["Declare Event in DRL",height=128]
+image:images/drools-cep-declare-event-java-annotations.png["Declare Event with Java annotations", height=128]
+
+
+
+
+== Temporal operators
+
+
+== Sliding Windows
+
+
+
+== Clocks
+As CEP works heavily with the concept of time, the rules engine needs a reference clock. Comparing timestamps of events with temporal operators is something that could be done without a clock (did this event occur before that event), but for a lot of temporal operations and sliding windows, the engine needs to know what the current time is. E.g. what's the average stock-price over the last 60 minutes, did an event *not* occur within 30 seconds after the current event, etc.
+
+JBoss BRMS/Drools provides 2 clocks, so called http://docs.jboss.org/drools/release/latest/kie-api-javadoc/org/kie/api/time/SessionClock.html[SessionClock] implementations out-of-the-box:
+
+* Real Time Clock: uses the system clock to determine the current timestamp.
+* Pseudo Clock: a clock that can be controlled by the application.
+ 
+
+=== RealtimeClock
+
+
+
+
+
+== Event Memory Management: Expiration
+
+
+
+
+
+== KieBase Configuration
+=== Event Processing Modes
+
+
+
+
+
+
