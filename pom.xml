@@ -179,5 +179,6 @@
 		<module>cep-workshop-airport-use-case-3</module>
 		<module>cep-workshop-airport-use-case-4</module>
 		<module>cep-workshop-airport-use-case-5</module>
+		<module>cep-workshop-airport-use-case-6</module>
 	</modules>
 </project>
