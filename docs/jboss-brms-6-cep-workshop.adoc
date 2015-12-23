@@ -11,7 +11,16 @@ Complex Event Processing allows one to reason over Events. JBoss BRMS 6 provides
 The key difference between reasoning over _facts_ and reasoning over _events_ is that with _events_, one can reason over time. E.g. one can reason over time-based correlations using, among other things, temportal operators. E.g. did this event happen before that event. Did this event start at the same time as that event, etc.
 
 == Events
-What makes a Fact and Event? In Drools, an Event is defined by marking/declaring a Fact as an Event. This can be done in different ways:
+What defines an Event? An Event is basically a Fact with a number of additional characteristics:
+
+Event Declaration and Semantics
+ Event semantics:
+* An event defines either a point-in-time or an interval
+* An event is usually immutable, however, this is not enforced by BRMS.
+* An event has a strong temporal relationship
+* All Events are Facts,but not all Facts are Events
+
+What technically makes a Fact and Event? In Drools, an Event is defined by marking/declaring a Fact as an Event. This can be done in different ways:
 
 * Using the _declare_ semantics in a _.drl_ file.
 * Using the Drools _@Role(Type.EVENT)_ annotation.
@@ -24,6 +33,10 @@ A key aspect that distinguishes an Event from a Fact is the notion of time. An E
 Hence, JBoss BRMS can both model point-in-time and interval-based events. A point-in-time event is represented as an interval-based event with duration = 0. 
 Both the timestamp and duration can be configured on the Event, either via the _declare_ semantics in a _.drl_ file or via a Drools annotation.
 
+
+
+
+
 As stated earlier, an Event must have a timestamp. However, one does not need to specifically declare a timestamp field on the Event.
 
 * When a timestamp field is explicitly specified on an Event, the engine uses the value of that field as the Event's timestamp.
@@ -35,10 +48,46 @@ image:images/drools-cep-declare-event-drl.png["Declare Event in DRL",height=128]
 image:images/drools-cep-declare-event-java-annotations.png["Declare Event with Java annotations", height=128]
 
 
-
-
 == Temporal operators
+As one of the characterisitics of an _event_ is that it is something that happened at a [green]#particular point in time#, a key concept within CEP are _temporal operators_
 
+As discussed earlier, an event can both be:
+
+* A point in time: the event has a timestamp and a 0 duration.
+* An interval: the event has both a timestamp and a non-0 duration.
+
+Therefore, temporal operators can be defined for combinations of:
+
+* 2 point-in-time events
+* A point-in-time and an interval event
+* 2 interval events
+
+Note that some combinations can only be used with a subset of the available temporal events.
+
+Temporal reasoning is an extensive field of research, from its roots on Temporal Modal Logic to its more practical applications in business systems. There are hundreds of papers and thesis written and approaches are described for several applications. Drools takes a pragmatic and simple approach based on several sources, but specially worth noting the following papers:
+
+* http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.534.5791&rep=rep1&type=pdf[An Interval-Based Representation of Temporal Knowledge, James F. Allen]
+* http://cse.unl.edu/~choueiry/Documents/Allen-CACM1983.pdf[Maintaining knowledge about temporal intervals, James F. Allen]
+
+Drools implements all 13 operators defined by Allen and also their logical complement (negation).
+
+. After
+. Before
+. Coincides
+. During
+. Finishes
+. Finished By
+. Includes
+. Meets
+. Met By
+. Overlaps
+. Overlapped By
+. Starts
+. Started By
+
+image:images/Temporal-Operators-Allen-1.png["Temporal Operators 1", height=128]
+image:images/Temporal-Operators-Allen-2.png["Temporal Operators 2", height=128]
+ 
 
 == Sliding Windows
 
@@ -59,6 +108,12 @@ JBoss BRMS/Drools provides 2 clocks, so called http://docs.jboss.org/drools/rele
 
 
 
+
+
+
+
+
+
 == Event Memory Management: Expiration
 
 
@@ -73,3 +128,4 @@ JBoss BRMS/Drools provides 2 clocks, so called http://docs.jboss.org/drools/rele
 
 
 
+=== Lab 1
