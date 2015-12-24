@@ -16,6 +16,60 @@ Complex Event Processing allows one to reason over Events. JBoss BRMS 6 provides
 
 The key difference between reasoning over _facts_ and reasoning over _events_ is that with _events_, one can reason over time. E.g. one can reason over time-based correlations using, among other things, temportal operators. E.g. did this event happen before that event. Did this event start at the same time as that event, etc.
 
+
+== KieBase Configuration
+=== Event Processing Modes
+Drools/BRMS defines 2 processing modes:
+
+* CLOUD
+* STREAM
+
+==== Cloud 
+Cloud mode is the default Drools/BRMS processing mode.
+
+When running in CLOUD mode, the engine sees all facts in the working memory, regular facts or events, as a whole. There is no notion of flow of time, although events have a timestamp as usual. In other words, although the engine knows that a given event was created, for instance, on January 1st 2009, at 09:35:40.767, it is not possible for the engine to determine how "old" the event is, because there is no concept of "now".
+
+In this mode, the engine will apply its usual many-to-many pattern matching algorithm, using the rules constraints to find the matching tuples, activate and fire rules as usual.
+
+This mode does not impose any kind of additional requirements on facts. So for instance:
+
+* There is no notion of time. No requirements clock synchronization.
+* There is no requirement on event ordering. The engine looks at the events as an unordered cloud against which the engine tries to match rules.
+
+==== Stream
+The STREAM processing mode is the mode of choice when the application needs to process streams of events. It adds a few common requirements to the regular processing, but enables a whole lot of features that make stream event processing a lot simpler.
+
+The main requirements to use STREAM mode are:
+
+* Events in each stream must be time-ordered. I.e., inside a given stream, events that happened first must be inserted first into the engine.
+* The engine will force synchronization between streams through the use of the session clock, so, although the application does not need to enforce time ordering between streams, the use of non-time-synchronized streams may result in some unexpected results.
+
+To enable STREAM-mode, one can configure the _eventProcessingMode_ attribute of the 'KieBase' in the 'kmodule.xml' file:
+
+[source, xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<kmodule xmlns="http://jboss.org/kie/6.0.0/kmodule">
+    <kbase name="rules" equalsBehavior="equality" eventProcessingMode="stream" packages="rules">
+        <ksession name="ksession-rules" default="true" type="stateful" clockType="pseudo"/>
+    </kbase>
+</kmodule>
+----
+
+Another option is to the STREAM-mode using the 'KieBaseConfiguration' object, like so:
+
+[source, java]
+----
+KieBaseConfiguration config = KieServices.Factory.get().newKieBaseConfiguration();
+config.setOption( EventProcessingOption.STREAM );
+----
+
+Or using a Java configuration option:
+[source, java]
+----
+drools.eventProcessingMode = stream
+----
+
 == Events
 What defines an Event? An Event is basically a Fact with a number of additional characteristics:
 
@@ -262,12 +316,27 @@ Expiration of events is implemented using sheduled ExpireActions. When events in
 When the ExpireAction is executed, the event is only removed from the OTN for which the expiration was scheduled. This means that if an event is a subclass of another event, and 2 expirations have been scheduled for the given event, the event will not be completely removed from WorkingMemory. In that case the event will only be removed from the OTN that matches the expiration schedule.
 
 
-== KieBase Configuration
-=== Event Processing Modes
+== Drools Fusion Labs
+These Drools Fusion labs aim to build-up a small rulebase for an airport baggage scanning system, using Complex Event Processing ordering system. The lab starts with a small, pre-defined fact and event-model and a simple rule-base. The idea is to gradually expand the rule-base and add new features using more sophisticated Drools CEP concepts, effectively building new and more sophisticated functionality.
 
+=== Fact/Event Model
+The _fact model_ contains the classes that define the facts and events over which the rules will reason. We will create objects from these classes and inject them into the Drools WorkingMemory (session).
 
+The examples are modelled around an airport baggage scanning system. The rules are, among other things, responsible for detecting lost luggage, calculating the amount of luggage that enters a certain location at the airport and calculating the average processing time to detect potential upcoming problems early in the system.
 
+The model contains the following classes:
+
+. `BagScannedEvent`: The event implementation when a bag gets scanned.
+. `Location`: Enumeration that defines the location at which the bag got scanned. This can be _CHECK_IN_, _SORTING_, _STAGING_ or _LOADING_.
+. `BagTag`: The tag attached to the bag.
+
+The BagScannedEvent has a reference to the BagTag. Also, the `BagScannedEvent` has a reference to the `Location`. This allows us to use the same event-type for different scans throughout the system.
+
+=== Implementation
+All labs have a `Main` class that is responsible for boot-strapping the Drools/BRMS engine, reading the events from a CSV-file, inserting the events into the session, advancing the clock and firing the rules. As we want to mostly focus on writing rules, most of the surrounding logic (creating a `KieBase`, spinning of `KieSessions`, inserting events, firing rules) has already been pre-defined.
 
 
 
 === Lab 1
+
+
