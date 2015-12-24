@@ -4,6 +4,12 @@ Event:: A [blue]#significant# [red]#change of state# at a [green]#particular poi
 
 Complex Event Processing:: The ability to [blue]#detect#, [red]#correlate#, [green]#abstract, aggregate or compose# and react to events. 
 
+Event Detection:: From an event cloud or set of streams, select all the meaningful events, and only them.
+
+(Temporal) Event Correlation:: Ability to correlate events and facts declaring both temporal and non-temporal constraints between them. Ability to reason over event aggregation.
+
+Event Abstraction:: Ability to compose complex events from atomic events AND reason over them.
+
 == Complex Event Processing
 
 Complex Event Processing allows one to reason over Events. JBoss BRMS 6 provides extensive support for CEP through the Drools Fusion project.
@@ -33,10 +39,6 @@ A key aspect that distinguishes an Event from a Fact is the notion of time. An E
 Hence, JBoss BRMS can both model point-in-time and interval-based events. A point-in-time event is represented as an interval-based event with duration = 0. 
 Both the timestamp and duration can be configured on the Event, either via the _declare_ semantics in a _.drl_ file or via a Drools annotation.
 
-
-
-
-
 As stated earlier, an Event must have a timestamp. However, one does not need to specifically declare a timestamp field on the Event.
 
 * When a timestamp field is explicitly specified on an Event, the engine uses the value of that field as the Event's timestamp.
@@ -45,6 +47,7 @@ As stated earlier, an Event must have a timestamp. However, one does not need to
 The images below provide a number of examples on how Events and their properties can be declared:
 
 image:images/drools-cep-declare-event-drl.png["Declare Event in DRL",height=128]
+
 image:images/drools-cep-declare-event-java-annotations.png["Declare Event with Java annotations", height=128]
 
 
@@ -71,26 +74,76 @@ Temporal reasoning is an extensive field of research, from its roots on Temporal
 
 Drools implements all 13 operators defined by Allen and also their logical complement (negation).
 
-. After
-. Before
-. Coincides
-. During
-. Finishes
-. Finished By
-. Includes
-. Meets
-. Met By
-. Overlaps
-. Overlapped By
-. Starts
-. Started By
+. After: The after evaluator correlates two events and matches when the temporal distance from the current event to the event being correlated belongs to the distance range declared for the operator.
+. Before: The before evaluator correlates two events and matches when the temporal distance from the event being correlated to the current correlated belongs to the distance range declared for the operator.
+. Coincides: The coincides evaluator correlates two events and matches when both happen at the same time. Optionally, the evaluator accept thresholds for the distance between events' start and finish timestamps.
+. During: The during evaluator correlates two events and matches when the current event happens during the occurrence of the event being correlated.
+. Finishes: The finishes evaluator correlates two events and matches when the current event's start timestamp happens after the correlated event's start timestamp, but both end timestamps occur at the same time.
+. Finished By: The finishedby evaluator correlates two events and matches when the current event start timestamp happens before the correlated event start timestamp, but both end timestamps occur at the same time. This is the symmetrical opposite of finishes evaluator.
+. Includes: The includes evaluator correlates two events and matches when the event being correlated happens during the current event. It is the symmetrical opposite of during evaluator.
+. Meets: The meets evaluator correlates two events and matches when the current event's end timestamp happens at the same time as the correlated event's start timestamp.
+. Met By: The metby evaluator correlates two events and matches when the current event's start timestamp happens at the same time as the correlated event's end timestamp.
+. Overlaps: The overlaps evaluator correlates two events and matches when the current event starts before the correlated event starts and finishes after the correlated event starts, but before the correlated event finishes. In other words, both events have an overlapping period.
+. Overlapped By: The overlappedby evaluator correlates two events and matches when the correlated event starts before the current event starts and finishes after the current event starts, but before the current event finishes. In other words, both events have an overlapping period.
+. Starts: The starts evaluator correlates two events and matches when the current event's end timestamp happens before the correlated event's end timestamp, but both start timestamps occur at the same time.
+. Started By: The startedby evaluator correlates two events and matches when the correlating event's end timestamp happens before the current event's end timestamp, but both start timestamps occur at the same time.
+
+These 13 operators, and their relationship to point-in-time <-> point-in-time, point-in-time <-> interval and interval <-> interval event combinations is shown in the pictures below.
 
 image:images/Temporal-Operators-Allen-1.png["Temporal Operators 1", height=128]
+
 image:images/Temporal-Operators-Allen-2.png["Temporal Operators 2", height=128]
  
 
 == Sliding Windows
+Apart from temporal operators, BRMS has other time (and length) based correlation concepts. One of these concepts is _sliding windows_. Sliding Windows are a way to scope the events of interest by defining a window that is constantly moving. The two most common types of sliding window implementations are time based windows and length based windows.
 
+=== Time based Sliding Windows
+Time-based sliding windows allow one to scope events based on a constantly moving, time-based window:
+
+* Match all BagScannedEvents that happened in the SORTING location in the last 60 minutes.
+
+[source,java]
+----
+rule "Bags entered Sorting in the last 60 minutes"
+when
+        $event:BagScannedEvent(location == Location.SORTING) over window:time( 60m )
+then
+        System.out.println("BagScannedEvent entered SORTING: " + $event);
+end
+----
+
+This rule will match and fire for *all* events that entered the SORTING stage in the last 60 minutes. I.e. it will fire once for every event.
+
+=== Length based Sliding Windows
+Drools/BRMS also knows the concept of length-based sliding windows. These sliding windows allow one to define a sliding window over the last number of matching events:
+
+* Match the last 20 BagScannedEvents that happened in the SORTING location:
+
+[source, java]
+----
+rule "Last 20 bags that entered the SORTING location"
+when
+	$event:BagScannedEvent(location == Location.SORTING) over window:length ( 20 )
+then
+	System.out.println("BagScannedEvent entered SORTING: " + $event);
+end
+----
+
+=== Sliding Windows and Accumulates
+Sliding windows start to be become particularly interesting when combined with accumulate semantics. When using the two concepts together, one can for example define rules that calculate the moving average of a certain field of a set of events. For example, in our BagScannedEvent use-case, we can calculate the average weight of the last 20 bags, or the average time it took for the last 20 bags to go from CHECK_IN to the SORTING location.
+
+A simple example that calculates the average weight of the last 20 bags that entered the SORTING location could look something like this:
+
+[source, java]
+----
+rule "Average weight of the last 20 bags that entered the SORTING location."
+when
+	$number:Number() from accumulate($event:BagScannedEvent(location == Location.SORTING) over window:length( 20 ), average($event.getWeight())) 
+then
+	System.out.println("Average weight of the last 20 bags that entered the SORTING location: " + $number);
+end
+----
 
 
 == Clocks
@@ -101,18 +154,71 @@ JBoss BRMS/Drools provides 2 clocks, so called http://docs.jboss.org/drools/rele
 * Real Time Clock: uses the system clock to determine the current timestamp.
 * Pseudo Clock: a clock that can be controlled by the application.
  
+=== Realtime Clock
+The Realtime Clock uses the system clock to determine the current timestamp. Hence, the clock progresses automatically as the system clock progresses.
 
-=== RealtimeClock
+The engine uses the RealtimeClock by default. However, it can be explicitly configured in the _kmodule.xml_:
 
+[source, xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<kmodule xmlns="http://jboss.org/kie/6.0.0/kmodule">
+    <kbase name="rules" equalsBehavior="equality" eventProcessingMode="stream" packages="rules">
+        <ksession name="ksession-rules" default="true" type="stateful" clockType="realtime"/>
+    </kbase>
+</kmodule>
+----
 
+When an event does not explicitly define a timestamp, the engine uses the time of the clock to assign the event a timestamp. In the case of the Realtime Clock, this will be the system time when the event is inserted into WorkingMemory (the KieSession).
 
+=== Pseudo Clock
+The second clock-type that Drools/BRMS provides out-of-the-box is the Pseudo Clock. The Pseudo Clock is a clock implementation that allows on to control clock progression from the application code (or from rules).
 
+One area in which this clock is often used is in unit-testing. I.e. it's quite unfeasible to test rules that, for example, correlate events with temporal constraints covering minutes, hours, days or even weeks. In these cases, being able to advance the clock from application code by minutes, hours, days and weeks allows one to easily test these rules from within a unit-test.
 
+To use the Pseudo Clock implementation, one has to explicitly configure the session to use it. This can for example be done in the Drools _kmodule.xml_, like this:
 
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<kmodule xmlns="http://jboss.org/kie/6.0.0/kmodule">
+    <kbase name="rules" equalsBehavior="equality" eventProcessingMode="stream" packages="rules">
+        <ksession name="ksession-rules" default="true" type="stateful" clockType="pseudo"/>
+    </kbase>
+</kmodule>
+----
 
+To use it, one can retrieve the clock from the 'KieSession', and advance it using the following code:
 
+[source,java]
+----
+PseudoClockScheduler clock = kieSession.getSessionClock();
+long deltaTime = 60000;
+//Advance the clock with 60 seconds
+clock.advanceTime(deltaTime, TimeUnit.MILLISECONDS);
+----
 
+Apart from using the Pseudo Clock for testing, there are more scenarios in which this clock-type can be preferred over other clocks. One of the key characteristics of this clock is that it allows for determinic execution of the engine. One scenario in which it can be used is in, so called 'replay scenarios', where one wants to replay the behaviour of the engine by resetting the KieSession to a particular point-in-time and replaying the events. In this case, using the Realtime Clock would most likely give one different results than the results one got in the original event processing due to the fact that the clock-time will not be the same in the replay scenario. Second, when replaying events, one would not want to have to insert the events with the same time-distance as they originally were inserted into the engine. This could span minutes, hours, days or even weeks.
 
+In such cases, it can be beneficial to explicitly define the timestamp on the event itself (rather than having the engine assign one on event insertion). Second, the Pseudo-Clock can be used in such a way that the application determines the delta between the timestamp of the inserted event and the current clocktime. The application can then advance the clock with this delta, allowing for a deterministic progression of the clock.
+
+One example use-case in which this approach has been used is in High Available Complex Event Processing.
+
+The sample code below shows a possible implementation. This code inserts an event into the session, determines the delta between the event-time and the current clock-time and advances the clock with the calculated delta.
+
+[source, java]
+----
+private static void insertAdvanceAndFire(KieSession kieSession, Event event) {
+	PseudoClockScheduler clock = kieSession.getSessionClock();
+	kieSession.insert(event);
+	long deltaTime = event.getTimestamp().getTime() - clock.getCurrentTime();
+	if (deltaTime > 0) {
+		LOGGER.info("Advancing clock with: " + deltaTime);
+		clock.advanceTime(deltaTime, TimeUnit.MILLISECONDS);
+	}
+	kieSession.fireAllRules();
+}
+----
 
 == Event Memory Management: Expiration
 
