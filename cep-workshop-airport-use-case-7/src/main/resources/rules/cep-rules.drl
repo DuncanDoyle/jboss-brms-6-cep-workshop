@@ -31,4 +31,11 @@ then
 	System.out.println("\nBagScannedEvent in entry-point Staging: " + $event1);
 end
 
+/*
+ * Lab 7: Combine the events of multiple streams in a rule.
+ *	Task: Create a rule that matches the a BagScanned CheckIn event with its BagScanned Sorting event. Write the result to System.out.
+ */
+ 
+ 
+
 

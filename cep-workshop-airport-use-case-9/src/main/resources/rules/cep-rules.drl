@@ -1,0 +1,22 @@
+package org.jboss.ddoyle.brms.cep.workshop.rules;
+
+import org.jboss.ddoyle.brms.cep.workshop.model.BagScannedEvent;
+import org.jboss.ddoyle.brms.cep.workshop.model.Location;
+
+declare BagScannedEvent
+   @role(event)
+   @timestamp(timestamp)
+end
+
+
+rule "BagLostBeforeSorting"
+when
+	$event1:BagScannedEvent(location == Location.CHECK_IN)
+	not($event2:BagScannedEvent(location == Location.SORTING, this != $event1, this.bagTag.id == $event1.bagTag.id, this after[0, 10m] $event1)) 
+then
+	System.out.println("Bag lost before sorting: " + $event1.getBagTag().getId());
+end
+ 	
+ 
+
+

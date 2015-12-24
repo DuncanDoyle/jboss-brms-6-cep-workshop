@@ -354,44 +354,50 @@ In this second lab we're going to write a rule that counts the number of bags th
 Implement the rule. The output would be a number of rule-firings, where the last value calculated is 2.
 
 === Lab 3
+Instead of a time-based constraint, we now want to track the average weight of the last 5 bags that were checked in (don't ask me why we want to know this, I had to come up with something to make you use a length constraint ;-)).
 
-
-
-
+If implemented correctly, the last calculated average weight is: 16.24
 
 === Lab 4
+We're going to take it one step further. Instead of just calculating an average over a single set of events, we now want to combine more complex logic in our average calculations.
 
+In this lab you're asked to implement a rule that calculates the average time it took for the last 5 bags to reach the SORTING stage. This rule allows us to track the processing time of the last x-bags and from that identity potential problems in processing time early.
 
-
-
-
-
+If implemented correctly, the last calculated average processing time is:
 
 === Lab 5
+The rule we implemented in the previous lab has a potential problem. Write an additional rule that detects the situation that could give an incorrect outcome in our average processing time calculation.
 
-
-
-
-
-
-
-
-
-
+To test the rule, edit the `src/main/resources/events.csv` so that it exposes the problem and triggers the rule you've just implemented.
 
 === Lab 6
+In this lab we will be working with Streams and Entry-Points. The `src/main/resources/rules/cep-rules.drl` file contains 3 initial rules that only apply to events from a certain `entry-point`. First, run the `Main` class to observe the behavior. You will notice that none of the rules fire, event though BagScannedEvents are being inserted into the session.
 
+Adapt the code in the `Main` class in such a way that the rules will fire. The word `entry-point` should give you a hint.
 
-
-
-
-
-
+If the code has been correctly implemented, all rules should fire 10 times.
 
 === Lab 7
+In the previous lab we've learned how to insert events into specific entry-points and how to write rules to only match on events from specific entry-points.
 
+In this lab we are going to combine events from multiple entry-points and reason over them.
 
+Write a rule that matches the a BagScanned CheckIn event with its BagScanned Sorting event. Write the result to System.out.
 
+=== Lab 8
+We've addressed the basic concepts and constructs of Complex Event Processing in Drools/BRMS. One thing we haven't looked at is event Expiration. As stated in the workshop documentation, expiration can both be explicitly defined on an event-type, or inferred by the temporal constraints on the rules.
 
+In this exercise, we will look at event expiration. We have reduced the number of events in `src/main/resources/events.csv' to 6 events. 
 
+Currently, the expiration policy for the BagScannedEvents is set to 5 days. Change this to 10 minutes. Next, write a RuleRuntimeEventListener and implement the `objectDeleted` method to be able to track when an event gets deleted from working memory.
 
+Run the `Main` class and observer that the 2 events that were inserted into the engine first are being automatically deleted from WorkingMemory,
+
+=== Lab 9
+As a last exercise, we will inspect how Drools infers the expiration of an event. In this lab we've removed the explicit `@expires` configuration from the event declaration. Second, we've implemented our initial "baggage lost" rule, which contains a temporal after [0, 10m] constraint.
+
+To inspect the behaviour of Drools, set a breakpoint on line 519 of the ObjectTypeNode class. Expiration offsets are defined on the ObjectTypeNode of a given object. This is especially interesting to know when using subclassing in your events. I.e. when you have an event that matches 2 ObjectTypeNodes, one for its superclass and one for its subclass, 2 expiry actions are scheduled, one per OTN.
+
+To further inspect the behaviour, also set a breakpoint on line 92 of the `PropagationEntry` interface. This is the line of the _Insert_ `PropagationEntry` that gets executed when a fact/event is inserted into the engine.
+
+When we now run the `Main` class in debug-mode, we can see that the expiration-offset on the OTN gets set when the network is created.

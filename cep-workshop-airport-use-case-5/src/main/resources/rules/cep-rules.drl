@@ -9,33 +9,50 @@ declare BagScannedEvent
    @expires(5d)
 end
 
-rule "BagScannedEvents from Stream CheckIn"
+rule "BagLostBeforeSorting"
 when
-	$event1:BagScannedEvent() from entry-point "CheckIn"
+	$event1:BagScannedEvent(location == Location.CHECK_IN)
+	not($event2:BagScannedEvent(location == Location.SORTING, this != $event1, this.bagTag.id == $event1.bagTag.id, this after[0, 10m] $event1)) 
 then
-	System.out.println("\nBagScannedEvent in entry-point CheckIn: " + $event1);
+	System.out.println("Bag lost before sorting: " + $event1.getBagTag().getId());
 end
 
-rule "BagScannedEvents from stream Sorting"
+rule "NumberOfBagsEnteredSortingInLastHour"
 when
-	$event1:BagScannedEvent() from entry-point "Sorting"
+	$number: Number() from accumulate ($b:BagScannedEvent(location == Location.SORTING) over window:time(60m), count($b))
 then
-	System.out.println("\nBagScannedEvent in entry-point Sorting: " + $event1);
+	System.out.println("\nNumber of bags that entered sorting in the last hour: " + $number + ". CurrentTime: " + drools.getWorkingMemory().getSessionClock().getCurrentTime());
 end
 
 
-rule "BagScannedEvents from stream Staging."
+rule "Average weight of last 5 bags that entered Sorting stage."
 when
-	$event1:BagScannedEvent() from entry-point "Staging"
+	$number: Number() from accumulate ($b:BagScannedEvent(location == Location.SORTING) over window:length(5), average($b.getWeight()))
 then
-	System.out.println("\nBagScannedEvent in entry-point Staging: " + $event1);
+	System.out.println("\nAverage weight of last 5 bags: " + $number + ". CurrentTime: " + drools.getWorkingMemory().getSessionClock().getCurrentTime());
 end
 
 /*
- * Lab 5: Combine the events of multiple streams in a rule.
- *	Task: Create a rule that matches the a BagScanned CheckIn event with its BagScanned Sorting event. Write the result to System.out.
+ * One note with this rule .... if there is event for a bag in sorting, there has to be an event for it in check_in.
+ * If not, that average will not be taken into account.
+ * So, we can create a warning rule for that state as well.
  */
- 
- 
+rule "Average processing time of last 5 bags in Sorting"
+enabled false
+when
+	$number: Number() from accumulate ($eventSorting: BagScannedEvent(location == Location.SORTING) over window:length(5) and
+											$eventCheckIn: BagScannedEvent(location == Location.CHECK_IN, bagTag.id == $eventSorting.bagTag.id), 
+											average ($eventSorting.getTimestamp().getTime() - $eventCheckIn.getTimestamp().getTime())) 
+then
+	System.out.println("Average processing time of the last 5 bags: " + $number);
+end
+
+rule "SORTING event should have matching CHECK_IN event"
+when
+	//Lab 5: See the commment above the previous rule. Implement a rule that detects this situation and prints an error on the console.
+then
+	//	System.out.println("BIG ERROR, we don't have a matching event in CHECK_IN for the event in SORTING");
+end
+
 
 

@@ -4,12 +4,20 @@ import java.util.Date;
 import java.util.UUID;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.kie.api.definition.type.Expires;
+import org.kie.api.definition.type.Role;
+import org.kie.api.definition.type.Role.Type;
+import org.kie.api.definition.type.Timestamp;
 
 /**
  * Event fired when a bag is scanned.
  * 
  * @author <a href="mailto:duncan.doyle@redhat.com">Duncan Doyle</a>
  */
+
+@Role(Type.EVENT)
+@Timestamp("timestamp")
+@Expires("5d")
 public class BagScannedEvent extends AbstractFact implements Event {
 
 	/**

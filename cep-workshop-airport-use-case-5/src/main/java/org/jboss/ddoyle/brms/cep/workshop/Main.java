@@ -5,12 +5,8 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import javax.print.attribute.standard.MediaSize.Other;
-
 import org.drools.core.time.impl.PseudoClockScheduler;
-import org.jboss.ddoyle.brms.cep.workshop.model.BagScannedEvent;
 import org.jboss.ddoyle.brms.cep.workshop.model.Event;
-import org.jboss.ddoyle.brms.cep.workshop.model.Location;
 import org.jboss.ddoyle.brms.workshop.cep.commons.events.FactsLoader;
 import org.kie.api.KieServices;
 import org.kie.api.runtime.KieContainer;
@@ -31,6 +27,7 @@ public class Main {
 		KieServices kieServices = KieServices.Factory.get();
 		KieContainer kieContainer = kieServices.getKieClasspathContainer();
 		KieSession kieSession = kieContainer.newKieSession();
+		decorateKieSession(kieSession);
 		List<Event> events;
 		try(InputStream eventFileInputStream = Main.class.getClassLoader().getResourceAsStream(EVENTS_FILE_NAME)) {
 			events = FactsLoader.loadEvents(eventFileInputStream);
@@ -45,29 +42,18 @@ public class Main {
 	
 	private static void insertAndFire(KieSession kieSession, Event event) {
 		PseudoClockScheduler clock = kieSession.getSessionClock();
-		Location location = ((BagScannedEvent) event).getLocation();
-		switch(location) {
-			case CHECK_IN:
-				kieSession.getEntryPoint("CheckIn").insert(event);
-				break;
-			case SORTING:
-				kieSession.getEntryPoint("Sorting").insert(event);
-				break;
-			case STAGING:
-				kieSession.getEntryPoint("Staging").insert(event);
-				break;
-			case LOADING:
-				kieSession.getEntryPoint("Loading").insert(event);
-				break;
-			default:
-				throw new IllegalArgumentException("Unexpected location.");
-		}
-		
+		kieSession.insert(event);
 		long deltaTime = event.getTimestamp().getTime() - clock.getCurrentTime();
 		if (deltaTime > 0) {
+			LOGGER.info("Advancing clock with: " + deltaTime);
 			clock.advanceTime(deltaTime, TimeUnit.MILLISECONDS);
 		}
 		kieSession.fireAllRules();
 	}
 	
+	private static void decorateKieSession(KieSession kieSession) {
+		kieSession.addEventListener(new LoggingAgendaEventListener());
+		kieSession.addEventListener(new LoggingRuleRuntimeEventListener());
+	}
+
 }

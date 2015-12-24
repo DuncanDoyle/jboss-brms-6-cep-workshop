@@ -9,26 +9,34 @@ declare BagScannedEvent
    @expires(5d)
 end
 
-rule "BagScannedEvents from Stream CheckIn"
+rule "BagLostBeforeSorting"
 when
-	$event1:BagScannedEvent() from entry-point "CheckIn"
+	$event1:BagScannedEvent(location == Location.CHECK_IN)
+	not($event2:BagScannedEvent(location == Location.SORTING, this != $event1, this.bagTag.id == $event1.bagTag.id, this after[0, 10m] $event1)) 
 then
-	System.out.println("\nBagScannedEvent in entry-point CheckIn: " + $event1);
+	System.out.println("Bag lost before sorting: " + $event1.getBagTag().getId());
 end
 
-rule "BagScannedEvents from stream Sorting"
+rule "NumberOfBagsEnteredSortingInLastHour"
 when
-	$event1:BagScannedEvent() from entry-point "Sorting"
+	$number: Number() from accumulate ($b:BagScannedEvent(location == Location.SORTING) over window:time(60m), count($b))
 then
-	System.out.println("\nBagScannedEvent in entry-point Sorting: " + $event1);
+	System.out.println("\nNumber of bags that entered sorting in the last hour: " + $number + ". CurrentTime: " + drools.getWorkingMemory().getSessionClock().getCurrentTime());
 end
 
 
-rule "BagScannedEvents from stream Staging."
+rule "Average weight of last 5 bags that entered Sorting stage."
 when
-	$event1:BagScannedEvent() from entry-point "Staging"
+	$number: Number() from accumulate ($b:BagScannedEvent(location == Location.SORTING) over window:length(5), average($b.getWeight()))
 then
-	System.out.println("\nBagScannedEvent in entry-point Staging: " + $event1);
+	System.out.println("\nAverage weight of last 5 bags: " + $number + ". CurrentTime: " + drools.getWorkingMemory().getSessionClock().getCurrentTime());
 end
 
+rule "Average processing time of last 5 bags in Sorting"
+when
+	//Lab 4: implement a rule that calculates the average processing time of the last 5 bags that entered the SORTING stage.
+	//I.e. we want to know the average amount of time it took to between the BagScannedEvent of a bag at CHECK_IN and a BagScannedEvent at the SORTING location. 
+then
+	//System.out.println("Average processing time of the last 5 bags: " + $number);
+end
 

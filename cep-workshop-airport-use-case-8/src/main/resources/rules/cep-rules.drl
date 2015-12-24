@@ -31,4 +31,14 @@ then
 	System.out.println("\nBagScannedEvent in entry-point Staging: " + $event1);
 end
 
+ rule "CombineEventsFromDifferentStreams"
+ when
+ 	$event1:BagScannedEvent(location == Location.CHECK_IN) from entry-point "CheckIn"
+ 	$event2:BagScannedEvent(location == Location.SORTING, bagTag.id == $event1.bagTag.id, this != $event1) from entry-point "Sorting"
+ then
+ 	System.out.println("Found matching BagScannedEvents in CHECK_IN and SORTING for BagTag: " + $event1.getBagTag().getId());
+ end
+ 	
+ 
+
 
