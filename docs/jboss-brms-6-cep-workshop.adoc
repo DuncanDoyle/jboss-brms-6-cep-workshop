@@ -335,8 +335,63 @@ The BagScannedEvent has a reference to the BagTag. Also, the `BagScannedEvent` h
 === Implementation
 All labs have a `Main` class that is responsible for boot-strapping the Drools/BRMS engine, reading the events from a CSV-file, inserting the events into the session, advancing the clock and firing the rules. As we want to mostly focus on writing rules, most of the surrounding logic (creating a `KieBase`, spinning of `KieSessions`, inserting events, firing rules) has already been pre-defined.
 
-
-
 === Lab 1
+This first lab contains 2 exercises. The end result of this lab should be a rule that detects lost luggage when an BagScannedEvent has not been created at the SORTING location within 10 minutes of a BagScannedEvent created at the CHECK_IN stage.
+
+Note that the `src/main/resources/events.csv` file already contains our events which will be inserted into our session. Hence, we won't need to adapt any Java code in this exercise and can solely work on the rules.
+
+==== 1-a
+To be able to use temporal reasoning on our BagScannedEvent, the type needs to be declared as an event. In this lab we will do this in the `src/main/resources/rules/cep-rules.drl` file. Open this file and add the required `declare` definition for the `BagScannedEvent` class.
+
+==== 1-b
+Now that we have defined our event, we can start implementing our rules. As stated earlier, the rule should be able to detect that a BagScannedEvent for the Sorting location has not arrived within a given time-frame (10 minutes) after we've received the BagScannedEvent for the CHECK_IN location.
+
+Implement the rule and test it by running the `Main` class. If implemented correctly, your rule should identify that only bag 1 got lost.
+
+=== Lab 2
+In this second lab we're going to write a rule that counts the number of bags that entered the SORTING stage in the last hour. Think about which Drools CEP concept(s) you most likely would need to use to implement this rule.
+
+Implement the rule. The output would be a number of rule-firings, where the last value calculated is 2.
+
+=== Lab 3
+
+
+
+
+
+=== Lab 4
+
+
+
+
+
+
+
+=== Lab 5
+
+
+
+
+
+
+
+
+
+
+
+=== Lab 6
+
+
+
+
+
+
+
+
+=== Lab 7
+
+
+
+
 
 

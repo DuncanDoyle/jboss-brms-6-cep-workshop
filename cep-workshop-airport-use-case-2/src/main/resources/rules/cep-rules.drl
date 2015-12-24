@@ -12,17 +12,16 @@ end
 rule "BagLostBeforeSorting"
 when
 	$event1:BagScannedEvent(location == Location.CHECK_IN)
-	not($event2:BagScannedEvent(location == Location.SORTING, this != $event1, this after[0, 10m] $event1)) 
+	not($event2:BagScannedEvent(location == Location.SORTING, this != $event1, this.bagTag.id == $event1.bagTag.id, this after[0, 10m] $event1)) 
 then
 	System.out.println("Bag lost before sorting: " + $event1.getBagTag().getId());
 end
 
+
 rule "NumberOfBagsEnteredSortingInLastHour"
 when
-	$number: Number() from accumulate ($b:BagScannedEvent(location == Location.SORTING) over window:time(60m), count($b))
+	//Lab 2: Write a rule that counts the number of bags that entered the sorting stage in the last hour. 
 then
-	System.out.println("Number of bags that entered sorting in the last hour: " + $number + ". CurrentTime: " + drools.getWorkingMemory().getSessionClock().getCurrentTime());
+	//System.out.println("Number of bags that entered sorting in the last hour: " + $number + ". CurrentTime: " + drools.getWorkingMemory().getSessionClock().getCurrentTime());
 end
-
-
 
