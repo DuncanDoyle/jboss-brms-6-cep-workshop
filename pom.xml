@@ -183,6 +183,8 @@
 		<module>cep-workshop-airport-use-case-7</module>
 		<module>cep-workshop-airport-use-case-8</module>
 		<module>cep-workshop-airport-use-case-9</module>
+<!--
 		<module>cep-workshop-airport-use-case-10</module>
+-->
 	</modules>
 </project>
