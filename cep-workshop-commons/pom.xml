@@ -14,10 +14,6 @@
 			<groupId>org.jboss.ddoyle.brms.workshop</groupId>
 			<artifactId>cep-workshop-datamodel</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>org.jboss.ddoyle.brms.workshop</groupId>
-			<artifactId>cep-workshop-commons</artifactId>
-		</dependency>
 
 		<!-- JBoss BRMS/Drools dependencies. -->
 		<dependency>
